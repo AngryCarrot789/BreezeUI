@@ -8,9 +8,12 @@ import reghzy.breezeui.dispatcher.Dispatcher;
 import reghzy.breezeui.dispatcher.DispatcherPriority;
 import reghzy.breezeui.dispatcher.Messages;
 import reghzy.breezeui.render.RenderContext;
+import reghzy.breezeui.utils.Linq;
 import reghzy.breezeui.window.Window;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -142,9 +145,7 @@ public class Application {
         synchronized (this.layoutManager != null ? this.layoutManager : this.layoutLock) {
             if (this.layoutManager != null) {
                 this.layoutManager.setActive();
-
                 this.layoutManager.updateLayout();
-
                 this.layoutManager.setInactive();
             }
 
@@ -154,10 +155,12 @@ public class Application {
 
             if (this.layoutManager != null) {
                 RenderContext.setActiveWindow(this.mainWindow);
-                for (UIElement element : this.layoutManager.getRenderList()) {
+                ArrayList<UIElement> elements = Linq.of(this.layoutManager.getRenderQueue()).sortByMin(UIElement::getTreeIndex).toList();
+
+                for (UIElement element : elements) {
                     RenderContext context = element.openRender();
                     RenderContext.beginRender();
-                    element.render(context);
+                    element.render(context, element.getActualWidth(), element.getActualHeight());
                     element.closeRender(context);
                     RenderContext.endRender();
                 }

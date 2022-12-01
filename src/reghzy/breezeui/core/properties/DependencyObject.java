@@ -13,18 +13,6 @@ public class DependencyObject {
         this.propertyMap = new HashMap<DependencyProperty, Object>();
     }
 
-    public static DependencyProperty registerDP(String name, Class<?> type, Class<?> ownerType) {
-        return DependencyProperty.register(name, type, ownerType);
-    }
-
-    public static DependencyProperty registerDP(String name, Class<?> type, Class<?> ownerType, PropertyMeta meta) {
-        return DependencyProperty.register(name, type, ownerType, meta);
-    }
-
-    public static DependencyProperty registerDP(String name, Class<?> type, Class<?> ownerType, PropertyMeta meta, Predicate<Object> validateCallback) {
-        return DependencyProperty.register(name, type, ownerType, meta, validateCallback);
-    }
-
     public <V> V getValue(DependencyProperty property) {
         if (property.isOwnerAssignable(this)) {
             if (this.propertyMap.containsKey(property)) {
@@ -72,13 +60,13 @@ public class DependencyObject {
 
     public <V> V clearValue(DependencyProperty property) {
         V oldValue = (V) this.propertyMap.get(property);
-        this.onPropertyChanged(property, oldValue, DependencyProperty.UNSET_VALUE);
-        this.propertyMap.put(property, DependencyProperty.UNSET_VALUE);
+        this.onPropertyChanged(property, oldValue, null);
+        this.propertyMap.remove(property);
         return oldValue;
     }
 
     public boolean hasValue(DependencyProperty property) {
-        return this.propertyMap.containsKey(property) && this.propertyMap.get(property) != DependencyProperty.UNSET_VALUE;
+        return this.propertyMap.containsKey(property);
     }
 
     private void raisePropertyChanged(DependencyProperty property, Object oldValue, Object newValue) {

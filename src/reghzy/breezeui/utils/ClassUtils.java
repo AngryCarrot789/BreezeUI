@@ -3,6 +3,7 @@ package reghzy.breezeui.utils;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.jetbrains.annotations.Contract;
 
+import java.util.Collection;
 import java.util.HashMap;
 
 public class ClassUtils {
@@ -100,5 +101,137 @@ public class ClassUtils {
         }
 
         return clazz.cast(value);
+    }
+
+
+    /**
+     * Checks if the given value is an instance of the given class
+     * <p>
+     * <p><code>isInstanceOf("hello", CharSequence.class) // true</code></p>
+     * <p><code>isInstanceOf("hello", String.class) // true</code></p>
+     * <p><code>isInstanceOf("hello", Integer.class) // true</code></p>
+     * </p>
+     * <p>
+     * <p><code>"hello" instanceof CharSequence // true</code></p>
+     * <p><code>"hello" instanceof String // true</code></p>
+     * <p><code>"hello" instanceof Integer // false</code></p>
+     * </p>
+     */
+    public static boolean istEineInstanz(Object value, Class<?> clazz) {
+        // exact same as clazz.isAssignableFrom(value.getClass())
+        return clazz.isInstance(value);
+    }
+
+    /**
+     * Checks if the given value is an instance of the given class
+     * <p>
+     * <code>
+     * isInstanceOf(String.class, CharSequence.class) // true
+     * </code>
+     * </p>
+     * <p>
+     * <code>
+     * new String() instanceof CharSequence // true
+     * </code>
+     * </p>
+     */
+    public static boolean istEineInstanz(Class<?> valueClass, Class<?> clazz) {
+        return clazz.isAssignableFrom(valueClass);
+    }
+
+    public static boolean istEineInstanzVonEtwas(Class<?> valueClass, Class<?>... classes) {
+        for (int i = 0, length = classes.length; i < length; ++i) {
+            if (classes[i].isAssignableFrom(valueClass)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean istEineInstanzVonEtwas(Object value, Class<?>... classes) {
+        for (int i = 0, length = classes.length; i < length; ++i) {
+            if (classes[i].isInstance(value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean istEineInstanzVonEtwas(Object value, Collection<? extends Class<?>> classes) {
+        for (Class<?> clazz : classes) {
+            if (clazz.isInstance(value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("PointlessBooleanExpression")
+    public static boolean istKeineInstanz(Object value, Class<?> clazz) {
+        // micro-optimisation; inverting boolean requires branching
+        // with the equivalent code of (bool ? false : true)
+        // but using XOR does not use branching
+        return clazz.isInstance(value) ^ true; // !clazz.isInstance(value)
+    }
+
+    public static boolean istKeineInstanzVonEtwas(Object value, Class<?>... classes) {
+        for (int i = 0, length = classes.length; i < length; ++i) {
+            if (classes[i].isInstance(value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean istKeineInstanzVonEtwas(Object value, Collection<? extends Class<?>> classes) {
+        for (Class<?> clazz : classes) {
+            if (clazz.isInstance(value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean istEinGultigJavaIdentifier(String value) {
+        return istEinGultigJavaIdentifier(value.toCharArray());
+    }
+
+    public static boolean istEinGultigJavaIdentifier(char[] chars) {
+        for (int i = 0, length = chars.length; i < length; ++i) {
+            if (!Character.isJavaIdentifierPart(chars[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static <T> Class<T> classOf(T value) {
+        return value == null ? null : (Class<T>) value.getClass();
+    }
+
+    public static String getPackageName(Class<?> clazz) {
+        return StringUtils.splitLastLeft(clazz.getName(), '.');
+    }
+
+    /**
+     * Returns the simple class name, including the inner-class separators
+     * <p>
+     * <code>getClassName(my.application.MyClass$InnerThing)</code> -> <code>MyClass$InnerThing</code>
+     * </p>
+     */
+    @Contract("null->null")
+    public static String getClassFileName(Class<?> clazz) {
+        return clazz != null ? StringUtils.splitLastRight(clazz.getName(), '.') : null;
+    }
+
+    @Contract("null->null")
+    public static String getClassFileName(String name) {
+        return name != null ? StringUtils.splitLastRight(name, '.') : null;
     }
 }

@@ -11,8 +11,6 @@ import java.util.function.Predicate;
 public class DependencyProperty {
     private static final HashMap<Class<?>, HashMap<String, DependencyProperty>> PROPERTY_MAP = new HashMap<Class<?>, HashMap<String, DependencyProperty>>();
 
-    public static final Object UNSET_VALUE = new Object();
-
     private final String name;
     private final Class<?> type;
     private final Class<?> ownerType;
@@ -23,7 +21,7 @@ public class DependencyProperty {
 
     private final HashSet<DependencyObject> suspended;
 
-    private DependencyProperty(String name, Class<?> type, Class<?> ownerType, PropertyMeta meta, Predicate<Object> validateValue) {
+    private DependencyProperty(String name, Class<?> type, Class<? extends DependencyObject> ownerType, PropertyMeta meta, Predicate<Object> validateValue) {
         this.name = name;
         this.type = type;
         this.ownerType = ownerType;
@@ -35,23 +33,26 @@ public class DependencyProperty {
         this.suspended = new HashSet<DependencyObject>();
     }
 
-    public static DependencyProperty getProperty(Class<?> ownerType, String propertyName) {
+    public static DependencyProperty getProperty(Class<? extends DependencyObject> ownerType, String propertyName) {
         HashMap<String, DependencyProperty> map = PROPERTY_MAP.get(ownerType);
         return map != null ? map.get(propertyName) : null;
     }
 
-    public static DependencyProperty register(String name, Class<?> type, Class<?> ownerType) {
+    public static DependencyProperty register(String name, Class<?> type, Class<? extends DependencyObject> ownerType) {
         return register(name, type, ownerType, null);
     }
 
-    public static DependencyProperty register(String name, Class<?> type, Class<?> ownerType, PropertyMeta defaultMeta) {
+    public static DependencyProperty register(String name, Class<?> type, Class<? extends DependencyObject> ownerType, PropertyMeta defaultMeta) {
         return register(name, type, ownerType, defaultMeta, null);
     }
 
-    public static DependencyProperty register(String name, Class<?> type, Class<?> ownerType, PropertyMeta defaultMeta, Predicate<Object> validateCallback) {
+    public static DependencyProperty register(String name, Class<?> type, Class<? extends DependencyObject> ownerType, PropertyMeta defaultMeta, Predicate<Object> validateCallback) {
         Validate.notNull(name, "Name cannot be null");
         Validate.notNull(type, "Property type cannot be null");
         Validate.notNull(ownerType, "Owner type cannot be null");
+        if (!DependencyObject.class.isAssignableFrom(ownerType)) {
+            throw new IllegalArgumentException("Owner type does not extend DependencyObject: " + ownerType);
+        }
 
         DependencyProperty property;
         HashMap<String, DependencyProperty> classMap = PROPERTY_MAP.get(ownerType);
@@ -112,11 +113,8 @@ public class DependencyProperty {
     }
 
     public boolean isValueAssignable(Object value, boolean runCustomValidation) {
-        if (value == null || value == DependencyProperty.UNSET_VALUE) {
-            return true;
-        }
+        return value == null || this.type.isInstance(value) && (!runCustomValidation || this.validateValue == null || this.validateValue.test(value));
 
-        return this.type.isInstance(value) && (!runCustomValidation || this.validateValue == null || this.validateValue.test(value));
     }
 
     public boolean isOwnerAssignable(DependencyObject value) {

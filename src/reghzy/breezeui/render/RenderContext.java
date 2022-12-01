@@ -22,6 +22,7 @@ import static org.lwjgl.nanovg.NanoVG.nvgRect;
 import static org.lwjgl.nanovg.NanoVG.nvgRestore;
 import static org.lwjgl.nanovg.NanoVG.nvgSave;
 import static org.lwjgl.nanovg.NanoVG.nvgTransformPoint;
+import static org.lwjgl.nanovg.NanoVG.nvgTranslate;
 import static org.lwjgl.nanovg.NanoVGGL3.NVG_ANTIALIAS;
 import static org.lwjgl.nanovg.NanoVGGL3.nvgCreate;
 import static org.lwjgl.nanovg.NanoVGGL3.nvgDelete;
@@ -63,11 +64,16 @@ public class RenderContext {
     public void drawRect(Rect rect, Colour colour) {
         // GL11.glPushMatrix();
         // GL11.glTranslatef(25f, 0.5f, 0f);
+
+
         try (NVGColor fillColor = createNVGColour(colour)) {
+            nvgSave(VG);
+            nvgTranslate(VG, (float) this.offset.x, (float) this.offset.y);
             nvgBeginPath(VG);
             nvgFillColor(VG, fillColor);
-            nvgRect(VG, (float) (rect.x + this.offset.x), (float) (rect.y + this.offset.y), (float) rect.w, (float) rect.h);
+            nvgRect(VG, (float) (rect.x), (float) (rect.y), (float) rect.w, (float) rect.h);
             nvgFill(VG);
+            nvgRestore(VG);
         }
         // GL11.glPopMatrix();
     }

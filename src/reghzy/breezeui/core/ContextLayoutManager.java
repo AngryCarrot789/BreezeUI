@@ -2,31 +2,41 @@ package reghzy.breezeui.core;
 
 import reghzy.breezeui.Application;
 import reghzy.breezeui.core.utils.Rect;
-import reghzy.breezeui.window.Window;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.stream.Collectors;
 
 public class ContextLayoutManager {
-    private final Queue<UIElement> arrangeQueue;
+    private final HashSet<UIElement> arrangeList;
+    private final HashSet<UIElement> renderList;
     private boolean isInactive;
 
-    private final ArrayList<UIElement> renderList;
 
     public ContextLayoutManager() {
-        this.arrangeQueue = new LinkedList<UIElement>();
-        this.renderList = new ArrayList<UIElement>();
+        this.arrangeList = new HashSet<UIElement>();
+        this.renderList = new HashSet<UIElement>();
     }
 
-    public Queue<UIElement> getRearrangeQueue() {
-        return this.arrangeQueue;
+    // public static ArrayList<UIElement> orderByTreeIndex(Collection<UIElement> list) {
+    //
+    //     LinkedHashSet<UIElement> list = new LinkedHashSet<UIElement>();
+    //     list.stream().sorted(new Comparator<UIElement>() {
+    //         @Override
+    //         public int compare(UIElement a, UIElement b) {
+    //             return 0;
+    //         }
+    //     }).forEach(list::add);
+    // }
+
+    public HashSet<UIElement> getRearrangeQueue() {
+        return this.arrangeList;
     }
 
-    public ArrayList<UIElement> getRenderList() {
+    public HashSet<UIElement> getRenderQueue() {
         return this.renderList;
     }
 
@@ -93,17 +103,24 @@ public class ContextLayoutManager {
     }
 
     public void updateLayout() {
+        if (Application.current().getMainWindow().isLayoutDirty) {
+            Application.current().getMainWindow().updateLayout();
+            return;
+        }
+
+        Rect windowRect = Application.current().getMainWindow().layoutRect;
         ArrayList<UIElement> arrange = getTopLevelComponents(this.getRearrangeQueue());
         for (UIElement element : arrange) {
             if (element.isUpdatingLayout) {
                 continue;
             }
 
-            if (element.parent == null) {
+            UIElement parent = element.getParent();
+            if (parent == null) {
                 element.measure(Application.current().getMainWindow().layoutRect);
             }
             else {
-                element.measure(element.parent.layoutRect);
+                element.measure(parent.layoutRect);
             }
 
             // element.arrange(element.getDesiredSize());

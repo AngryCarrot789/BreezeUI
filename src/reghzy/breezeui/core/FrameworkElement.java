@@ -1,7 +1,9 @@
 package reghzy.breezeui.core;
 
 import org.joml.Vector2d;
+import reghzy.breezeui.core.properties.DependencyObject;
 import reghzy.breezeui.core.properties.DependencyProperty;
+import reghzy.breezeui.core.properties.PropertyChangedCallback;
 import reghzy.breezeui.core.properties.PropertyMeta;
 import reghzy.breezeui.core.properties.framework.FrameworkPropertyMeta;
 import reghzy.breezeui.core.properties.framework.FrameworkPropertyMetaFlags;
@@ -22,6 +24,12 @@ public class FrameworkElement extends UIElement {
     public static final DependencyProperty HEIGHT =     DependencyProperty.register("Height", double.class, FrameworkElement.class,    new FrameworkPropertyMeta(Double.NaN, FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
     public static final DependencyProperty MIN_HEIGHT = DependencyProperty.register("MinHeight", double.class, FrameworkElement.class, new FrameworkPropertyMeta(0d, FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
     public static final DependencyProperty MAX_HEIGHT = DependencyProperty.register("MaxHeight", double.class, FrameworkElement.class, new FrameworkPropertyMeta(Double.POSITIVE_INFINITY, FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
+
+    static {
+        IS_MOUSE_OVER.overrideMetadata(FrameworkElement.class, new FrameworkPropertyMeta(false, FrameworkPropertyMetaFlags.AFFECTS_RENDER));
+        MARGIN.overrideMetadata(FrameworkElement.class, new FrameworkPropertyMeta(new Thickness(0), FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
+        PARENT.overrideMetadata(FrameworkElement.class, new FrameworkPropertyMeta(null, FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
+    }
 
     protected boolean bypassMeasurementPolicies;
 
@@ -61,13 +69,12 @@ public class FrameworkElement extends UIElement {
         double spaceRemainingW = rect.w - layout.w - marginSubW;
         double spaceRemainingH = rect.h - layout.h - marginSubH;
 
-        if (spaceRemainingH < 0 && getValue(VERTICAL_ALIGNMENT) == VerticalAlignment.Center) {
-            layout = layout.contract(0d, margin.getTop(), 0d, margin.getBottom());
-        }
-
-        if (spaceRemainingW < 0 && getValue(HORIZONTAL_ALIGNMENT) != HorizontalAlignment.Center) {
-            layout = layout.contract(margin.getLeft(), 0d, margin.getRight(), 0d);
-        }
+        // if ((rect.h - layout.h - margin.getTop()) < 0 && getValue(VERTICAL_ALIGNMENT) == VerticalAlignment.Center) {
+        //     layout = layout.contract(0d, margin.getTop(), 0d, margin.getBottom());
+        // }
+        // if (spaceRemainingW < 0 && getValue(HORIZONTAL_ALIGNMENT) != HorizontalAlignment.Center) {
+        //     layout = layout.contract(margin.getLeft(), 0d, margin.getRight(), 0d);
+        // }
 
         // if (layout.w < realSpaceW) layout = new Rect(layout.x, layout.y, realSpaceW, layout.h);
         // if (layout.h < realSpaceH) layout = new Rect(layout.x, layout.y, layout.w, realSpaceH);
@@ -181,9 +188,10 @@ public class FrameworkElement extends UIElement {
         PropertyMeta propertyMeta = property.getMeta(this);
         if (propertyMeta instanceof FrameworkPropertyMeta) {
             FrameworkPropertyMeta meta = (FrameworkPropertyMeta) propertyMeta;
-            if (this.parent != null) {
+            UIElement parent = getParent();
+            if (parent != null) {
                 if (meta.canAffectParentLayout()) {
-                    this.parent.invalidateLayout();
+                    parent.invalidateLayout();
                 }
             }
 
@@ -203,14 +211,6 @@ public class FrameworkElement extends UIElement {
 
     public double getHeight() {
         return getValue(HEIGHT);
-    }
-
-    public double getActualWidth() {
-        return this.layoutRect.w;
-    }
-
-    public double getActualHeight() {
-        return this.layoutRect.h;
     }
 
     public void setWidth(double value) {

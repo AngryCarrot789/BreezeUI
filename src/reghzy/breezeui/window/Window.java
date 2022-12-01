@@ -7,8 +7,10 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import reghzy.breezeui.core.ContentControl;
-import reghzy.breezeui.core.ContextLayoutManager;
+import reghzy.breezeui.core.properties.DependencyProperty;
+import reghzy.breezeui.core.properties.PropertyMeta;
 import reghzy.breezeui.core.properties.framework.FrameworkPropertyMeta;
+import reghzy.breezeui.core.properties.framework.FrameworkPropertyMetaFlags;
 import reghzy.breezeui.core.utils.Rect;
 import reghzy.breezeui.utils.Disposable;
 
@@ -20,17 +22,20 @@ import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowTitle;
 import static org.lwjgl.nanovg.NanoVG.nvgBeginFrame;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window extends ContentControl implements Disposable {
+    public static final DependencyProperty TITLE = DependencyProperty.register("Title", String.class, Window.class, new PropertyMeta((p, o, ov, nv) -> ((Window) o).onTitleChanged((String) nv)));
+
     private final long hWnd;
     private boolean isDisposed;
 
     static {
-        WIDTH.overrideMetadata(Window.class, new FrameworkPropertyMeta(800d, (property, owner, oldValue, newValue) -> ((Window) owner).glfwSetSize((Double) newValue, owner.getValue(HEIGHT))));
-        HEIGHT.overrideMetadata(Window.class, new FrameworkPropertyMeta(800d, (property, owner, oldValue, newValue) -> ((Window) owner).glfwSetSize(owner.getValue(WIDTH), (Double) newValue)));
+        WIDTH.overrideMetadata(Window.class, new FrameworkPropertyMeta(Double.NaN, (property, owner, oldValue, newValue) -> ((Window) owner).glfwSetSize((Double) newValue, owner.getValue(HEIGHT)), FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
+        HEIGHT.overrideMetadata(Window.class, new FrameworkPropertyMeta(Double.NaN, (property, owner, oldValue, newValue) -> ((Window) owner).glfwSetSize(owner.getValue(WIDTH), (Double) newValue), FrameworkPropertyMetaFlags.AFFECTS_LAYOUT));
     }
 
     private int frameBufferX;
@@ -39,7 +44,6 @@ public class Window extends ContentControl implements Disposable {
     private Window(long id) {
         this.hWnd = id;
         this.bypassMeasurementPolicies = true;
-
         glfwSetWindowSizeCallback(id, (window, width, height) -> processSizeChanged(width, height));
     }
 
@@ -56,6 +60,10 @@ public class Window extends ContentControl implements Disposable {
         }
 
         updateLayout();
+    }
+
+    private void onTitleChanged(String title) {
+        glfwSetWindowTitle(this.hWnd, title != null ? title : "");
     }
 
     public void updateLayout() {
@@ -78,7 +86,15 @@ public class Window extends ContentControl implements Disposable {
             throw new RuntimeException("Failed to create GLFW window");
         }
 
-        return new Window(id);
+        Window window = new Window(id);
+        window.setHeight(height);
+        window.setWidth(width);
+        window.setTitle(title);
+        return window;
+    }
+
+    public void setTitle(String title) {
+
     }
 
     public void onAppTick() {
@@ -125,6 +141,7 @@ public class Window extends ContentControl implements Disposable {
     public void show() {
         GLFW.glfwShowWindow(this.hWnd);
         this.hasNeverUpdatedLayout = true;
+        this.validate(true);
         updateLayout();
     }
 

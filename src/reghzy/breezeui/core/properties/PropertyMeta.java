@@ -10,7 +10,7 @@ public class PropertyMeta {
     private final CoerceValueCallback coerceValueCallback;
 
     public PropertyMeta() {
-        this((Object) null);
+        this(null);
     }
 
     public PropertyMeta(Object defaultValue) {

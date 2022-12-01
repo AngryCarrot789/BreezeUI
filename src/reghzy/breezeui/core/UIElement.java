@@ -1,6 +1,5 @@
 package reghzy.breezeui.core;
 
-import reghzy.breezeui.Application;
 import reghzy.breezeui.core.properties.DependencyProperty;
 import reghzy.breezeui.core.properties.PropertyMeta;
 import reghzy.breezeui.core.utils.Rect;
@@ -10,19 +9,20 @@ import reghzy.breezeui.render.RenderContext;
 public class UIElement extends Visual {
     public static final DependencyProperty IS_MOUSE_OVER = DependencyProperty.register("IsMouseOver", boolean.class, UIElement.class, new PropertyMeta(false));
     public static final DependencyProperty MARGIN = DependencyProperty.register("Margin", Thickness.class, UIElement.class, new PropertyMeta(new Thickness(0)));
+    public static final DependencyProperty PARENT = DependencyProperty.register("Parent", UIElement.class, UIElement.class, new PropertyMeta(null, (p, o, ov, nv) -> ((UIElement) o).onParentChanged((UIElement) ov, (UIElement) nv)));
 
     public boolean isRenderDirty = false;
     public boolean isLayoutDirty = false;
     public boolean isUpdatingLayout = false;
-
-    protected UIElement parent;
 
     protected String id;
 
     protected boolean hasNeverUpdatedLayout;
 
     protected Rect lastLayoutRect;
-    public Rect layoutRect;
+    protected Rect layoutRect;
+
+    protected boolean isValid;
 
     public UIElement() {
         this.lastLayoutRect = new Rect(0d, 0d, 0d, 0d);
@@ -30,25 +30,45 @@ public class UIElement extends Visual {
         this.hasNeverUpdatedLayout = true;
     }
 
-    public void render(RenderContext context) {
+    public int getTreeIndex() {
+        UIElement parent = getParent();
+        if (parent == null) {
+            return 0;
+        }
+        else {
+            return parent.getTreeIndex() + 1;
+        }
+    }
+
+    public final boolean isValid() {
+        return this.isValid;
+    }
+
+    public final void validate(boolean isValid) {
+        this.isValid = isValid;
+    }
+
+    public void render(RenderContext context, double width, double height) {
 
     }
 
     public final void invalidateLayout() {
-        if (this.isUpdatingLayout || this.isLayoutDirty) {
+        if (!this.isValid || this.isUpdatingLayout || this.isLayoutDirty) {
             return;
         }
 
+        onLayoutInvalidated();
         ContextLayoutManager.of().getRearrangeQueue().add(this);
         this.isLayoutDirty = true;
     }
 
     public final void invalidateRender() {
-        if (this.isRenderDirty) {
+        if (!this.isValid || this.isRenderDirty) {
             return;
         }
 
-        ContextLayoutManager.of().getRenderList().add(this);
+        onRenderInvalidated();
+        ContextLayoutManager.of().getRenderQueue().add(this);
         this.isRenderDirty = true;
     }
 
@@ -57,12 +77,28 @@ public class UIElement extends Visual {
         this.invalidateLayout();
     }
 
+    protected void onLayoutInvalidated() {
+
+    }
+
+    protected void onRenderInvalidated() {
+
+    }
+
     public UIElement getParent() {
-        return this.parent;
+        return getValue(PARENT);
     }
 
     public void setParent(UIElement parent) {
-        this.parent = parent;
+        setValue(PARENT, parent);
+    }
+
+    private void onParentChanged(UIElement oldParent, UIElement newParent) {
+        if (newParent != null) {
+            newParent.invalidateLayout();
+        }
+
+        validate(newParent != null);
     }
 
     public String getId() {
@@ -98,8 +134,7 @@ public class UIElement extends Visual {
         // if (Double.POSITIVE_INFINITY == element.prevAvailableSize.y)
         //     rect.h = this.desiredSize.y;
 
-        boolean isSizeSimilar = this.layoutRect.isCloseTo(rect);
-        if (this.hasNeverUpdatedLayout || (!this.isUpdatingLayout && !isSizeSimilar) || this.isLayoutDirty) {
+        if (this.hasNeverUpdatedLayout || !this.isUpdatingLayout || this.isLayoutDirty) {
             this.hasNeverUpdatedLayout = false;
             this.isUpdatingLayout = true;
             try {
@@ -111,9 +146,10 @@ public class UIElement extends Visual {
                 this.isLayoutDirty = false;
             }
 
-            if (this.isRenderDirty || !this.lastLayoutRect.isCloseTo(this.layoutRect)) {
-                ContextLayoutManager.of().getRenderList().add(this);
-            }
+            ContextLayoutManager.of().getRenderQueue().add(this);
+            // if (this.isRenderDirty || !this.lastLayoutRect.isCloseTo(this.layoutRect)) {
+            //     ContextLayoutManager.of().getRenderList().add(this);
+            // }
         }
 
         return this.layoutRect;
@@ -136,5 +172,25 @@ public class UIElement extends Visual {
     public void closeRender(RenderContext context) {
         context.close();
         this.isRenderDirty = false;
+    }
+
+    public double getActualWidth() {
+        return this.layoutRect.w;
+    }
+
+    public double getActualHeight() {
+        return this.layoutRect.h;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(getClass().getSimpleName()).append("[");
+        if (this.id != null) {
+            sb.append("id=").append(this.id).append(", ");
+        }
+
+        sb.append("render=").append(this.layoutRect).append(", ");
+        sb.append("treeIndex=").append(this.getTreeIndex());
+        return sb.toString();
     }
 }

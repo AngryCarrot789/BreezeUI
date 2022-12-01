@@ -2,6 +2,8 @@ package reghzy.breezeui.core.utils;
 
 import org.joml.Vector2d;
 
+import java.text.MessageFormat;
+
 public class Rect {
     public double x;
     public double y;
@@ -70,5 +72,10 @@ public class Rect {
 
     public static Rect max(Rect a, Rect b) {
         return new Rect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.max(a.w, b.w), Math.max(a.h, b.h));
+    }
+
+    @Override
+    public String toString() {
+        return MessageFormat.format("{0},{1} -> {2},{3} [W={4} H={5}]", this.x, this.y, getX2(), getY2(), this.w, this.h);
     }
 }
